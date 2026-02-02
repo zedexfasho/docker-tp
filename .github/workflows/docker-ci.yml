@@ -31,4 +31,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/jpetstore-groupe:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/jpetstore-groupe-app:latest
