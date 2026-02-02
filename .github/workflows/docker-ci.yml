@@ -1,4 +1,4 @@
-name: CI-CD Docker JPetStore
+name: CI-CD Docker JPetStore-Groupe
 
 on:
   push:
@@ -31,4 +31,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/jpetstore-app:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/jpetstore-groupe:latest
