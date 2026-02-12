@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
@@ -14,7 +17,7 @@ jobs:
       # 1️⃣ Récupérer le code du repo
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Clone complet pour une meilleure analyse SonarQube
+          fetch-depth: 0  # clone complet pour SonarQube
 
       # 2️⃣ Installer Java 17
       - name: Set up JDK 17
@@ -48,8 +51,9 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        run: mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-          -Dsonar.projectKey=TP-Sonarqube \
-          -Dsonar.projectName='TP-Sonarqube' \
-          -Dsonar.host.url=$SONAR_HOST_URL \
-          -Dsonar.login=$SONAR_TOKEN
+        run: |
+          mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            -Dsonar.projectKey=TP-Sonarqube \
+            -Dsonar.projectName='TP-Sonarqube' \
+            -Dsonar.host.url=$SONAR_HOST_URL \
+            -Dsonar.login=$SONAR_TOKEN
