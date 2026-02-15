@@ -1,4 +1,4 @@
-name: Build and Analyze
+name: Build, Security Scan and Analyze
 
 on:
   push:
@@ -10,14 +10,14 @@ on:
 
 jobs:
   build:
-    name: Build and Analyze with SonarQube
+    name: Build, Trivy Scan and SonarQube Analysis
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Récupérer le code du repo
+      # 1️⃣ Checkout du code
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # clone complet pour SonarQube
+          fetch-depth: 0
 
       # 2️⃣ Installer Java 17
       - name: Set up JDK 17
@@ -26,7 +26,7 @@ jobs:
           java-version: 17
           distribution: 'zulu'
 
-      # 3️⃣ Mettre en cache les dépendances SonarQube
+      # 3️⃣ Cache SonarQube
       - name: Cache SonarQube packages
         uses: actions/cache@v4
         with:
@@ -34,7 +34,7 @@ jobs:
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
-      # 4️⃣ Mettre en cache les dépendances Maven
+      # 4️⃣ Cache Maven
       - name: Cache Maven packages
         uses: actions/cache@v4
         with:
@@ -42,11 +42,32 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
-      # 5️⃣ Compiler le projet (ignore les tests qui échouent)
+      # 5️⃣ Build Maven
       - name: Build project
         run: mvn -B verify -Dmaven.test.failure.ignore=true
 
-      # 6️⃣ Analyse SonarQube
+      # 6️⃣ Scan du code avec Trivy (filesystem)
+      - name: Trivy FS Scan (Code + Dependencies)
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+          exit-code: '0'
+          format: 'table'
+
+      # 7️⃣ Scan de TON image Docker sur DockerHub
+      - name: Trivy Image Scan (DockerHub)
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          image-ref: 'salam630/jpetstore-groupe-app:latest'
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+          exit-code: '0'
+          format: 'table'
+
+      # 8️⃣ Analyse SonarQube
       - name: SonarQube analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -57,3 +78,4 @@ jobs:
             -Dsonar.projectName='TP-Sonarqube' \
             -Dsonar.host.url=$SONAR_HOST_URL \
             -Dsonar.login=$SONAR_TOKEN
+
