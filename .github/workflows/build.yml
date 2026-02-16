@@ -73,7 +73,12 @@ jobs:
       - name: Download Trivy HTML template
         run: curl -LO https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl
 
-      # 9️⃣ Convert FS JSON → HTML (une seule fois)
+      # 9️⃣ Installer Trivy CLI pour conversion
+      - name: Install Trivy CLI
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
+
+      # 🔟 Convert FS JSON → HTML
       - name: Convert FS report to HTML
         run: |
           trivy convert \
@@ -82,7 +87,7 @@ jobs:
             -o trivy-fs-report.html \
             trivy-fs-report.json
 
-      # 10️⃣ Upload HTML Reports
+      # 11️⃣ Upload HTML Reports
       - name: Upload Trivy HTML Reports
         uses: actions/upload-artifact@v4
         with:
@@ -91,7 +96,7 @@ jobs:
             trivy-fs-report.html
             trivy-image-report.html
 
-      # 11️⃣ SonarQube
+      # 12️⃣ SonarQube
       - name: SonarQube analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
