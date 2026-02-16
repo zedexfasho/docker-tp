@@ -46,7 +46,7 @@ jobs:
       - name: Build project
         run: mvn -B verify -Dmaven.test.failure.ignore=true
 
-      # 6️⃣ Scan du code avec Trivy (filesystem)
+      # 6️⃣ Trivy FS Scan (JSON report)
       - name: Trivy FS Scan (Code + Dependencies)
         uses: aquasecurity/trivy-action@0.20.0
         with:
@@ -55,9 +55,10 @@ jobs:
           severity: 'HIGH,CRITICAL'
           ignore-unfixed: true
           exit-code: '0'
-          format: 'table'
+          format: 'json'
+          output: 'trivy-fs-report.json'
 
-      # 7️⃣ Scan de TON image Docker sur DockerHub
+      # 7️⃣ Trivy Image Scan (JSON report)
       - name: Trivy Image Scan (DockerHub)
         uses: aquasecurity/trivy-action@0.20.0
         with:
@@ -65,9 +66,23 @@ jobs:
           severity: 'HIGH,CRITICAL'
           ignore-unfixed: true
           exit-code: '0'
-          format: 'table'
+          format: 'json'
+          output: 'trivy-image-report.json'
 
-      # 8️⃣ Analyse SonarQube
+      # 8️⃣ Upload Artifacts
+      - name: Upload Trivy FS Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-fs-report
+          path: trivy-fs-report.json
+
+      - name: Upload Trivy Image Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-image-report
+          path: trivy-image-report.json
+
+      # 9️⃣ Analyse SonarQube
       - name: SonarQube analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -78,4 +93,3 @@ jobs:
             -Dsonar.projectName='TP-Sonarqube' \
             -Dsonar.host.url=$SONAR_HOST_URL \
             -Dsonar.login=$SONAR_TOKEN
-
