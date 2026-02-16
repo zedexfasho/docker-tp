@@ -14,19 +14,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout du code
+      # 1️⃣ Checkout
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2️⃣ Installer Java 17
+      # 2️⃣ Java
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: 'zulu'
 
-      # 3️⃣ Cache SonarQube
+      # 3️⃣ Cache Sonar
       - name: Cache SonarQube packages
         uses: actions/cache@v4
         with:
@@ -42,47 +42,65 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
-      # 5️⃣ Build Maven
+      # 5️⃣ Build
       - name: Build project
         run: mvn -B verify -Dmaven.test.failure.ignore=true
 
-      # 6️⃣ Trivy FS Scan (JSON report)
-      - name: Trivy FS Scan (Code + Dependencies)
+      # 6️⃣ Trivy FS JSON
+      - name: Trivy FS Scan (JSON)
         uses: aquasecurity/trivy-action@0.20.0
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          severity: 'HIGH,CRITICAL'
+          scan-type: fs
+          scan-ref: .
+          format: json
+          output: trivy-fs-report.json
+          severity: HIGH,CRITICAL
           ignore-unfixed: true
-          exit-code: '0'
-          format: 'json'
-          output: 'trivy-fs-report.json'
+          exit-code: 0
 
-      # 7️⃣ Trivy Image Scan (JSON report)
-      - name: Trivy Image Scan (DockerHub)
+      # 7️⃣ Trivy Image JSON
+      - name: Trivy Image Scan (JSON)
         uses: aquasecurity/trivy-action@0.20.0
         with:
-          image-ref: 'salam630/jpetstore-groupe-app:latest'
-          severity: 'HIGH,CRITICAL'
+          image-ref: salam630/jpetstore-groupe-app:latest
+          format: json
+          output: trivy-image-report.json
+          severity: HIGH,CRITICAL
           ignore-unfixed: true
-          exit-code: '0'
-          format: 'json'
-          output: 'trivy-image-report.json'
+          exit-code: 0
 
-      # 8️⃣ Upload Artifacts
-      - name: Upload Trivy FS Report
+      # 8️⃣ Télécharger template HTML
+      - name: Download Trivy HTML template
+        run: curl -LO https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl
+
+      # 9️⃣ Convert FS JSON → HTML
+      - name: Convert FS report to HTML
+        run: |
+          trivy convert \
+            --format template \
+            --template "html.tpl" \
+            -o trivy-fs-report.html \
+            trivy-fs-report.json
+
+      # 🔟 Convert Image JSON → HTML
+      - name: Convert Image report to HTML
+        run: |
+          trivy convert \
+            --format template \
+            --template "html.tpl" \
+            -o trivy-image-report.html \
+            trivy-image-report.json
+
+      # 11️⃣ Upload HTML Reports
+      - name: Upload Trivy HTML Reports
         uses: actions/upload-artifact@v4
         with:
-          name: trivy-fs-report
-          path: trivy-fs-report.json
+          name: trivy-html-reports
+          path: |
+            trivy-fs-report.html
+            trivy-image-report.html
 
-      - name: Upload Trivy Image Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: trivy-image-report
-          path: trivy-image-report.json
-
-      # 9️⃣ Analyse SonarQube
+      # 12️⃣ SonarQube
       - name: SonarQube analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
